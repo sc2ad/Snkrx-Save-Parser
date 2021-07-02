@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31320.298
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SNKRX-Save-Parser", "SNKRX-Save-Parser\SNKRX-Save-Parser.csproj", "{46DA9886-6481-4723-8422-A8F5FABE5431}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SNKRX-Save-Parser.Tests", "SNKRX-Save-Parser.Tests\SNKRX-Save-Parser.Tests.csproj", "{6F838F34-2FA7-4595-9E91-9A2EBBA2F67F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{46DA9886-6481-4723-8422-A8F5FABE5431}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{46DA9886-6481-4723-8422-A8F5FABE5431}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{46DA9886-6481-4723-8422-A8F5FABE5431}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{46DA9886-6481-4723-8422-A8F5FABE5431}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6F838F34-2FA7-4595-9E91-9A2EBBA2F67F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F838F34-2FA7-4595-9E91-9A2EBBA2F67F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F838F34-2FA7-4595-9E91-9A2EBBA2F67F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F838F34-2FA7-4595-9E91-9A2EBBA2F67F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FB25190C-3B9B-467C-AC4D-1AE5101A4B21}
+	EndGlobalSection
+EndGlobal
