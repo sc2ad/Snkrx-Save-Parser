@@ -12,35 +12,6 @@ namespace SNKRX_Save_Parser.Deserialization
     /// </summary>
     public class LuaSaveTokenizer
     {
-        /// <summary>
-        /// A Lua Save file token.
-        /// </summary>
-        public enum Token
-        {
-            Unknown,
-            Return,
-            LeftBrace,
-            RightBrace,
-            LeftBracket,
-            RightBracket,
-            Equals,
-            Digit,
-            True,
-            False,
-            Comma,
-            StringLiteral
-        }
-
-        /// <summary>
-        /// Represents a Lua Save file token with some metadata.
-        /// </summary>
-        public struct TokenMatch
-        {
-            public Token Token { get; init; }
-            public bool IsMatch { get; init; }
-            public string Value { get; init; }
-        }
-
         private class RegexTokenDefinition
         {
             private readonly Regex pattern;
@@ -58,14 +29,9 @@ namespace SNKRX_Save_Parser.Deserialization
                 var match = pattern.Match(input);
                 if (match.Success)
                 {
-                    return new TokenMatch
-                    {
-                        IsMatch = true,
-                        Token = type,
-                        Value = match.Value
-                    };
+                    return new TokenMatch(type, match.Value);
                 }
-                return new TokenMatch { IsMatch = false };
+                return new TokenMatch();
             }
         }
 
@@ -77,7 +43,7 @@ namespace SNKRX_Save_Parser.Deserialization
             new RegexTokenDefinition("^\\[", Token.LeftBracket),
             new RegexTokenDefinition("^]", Token.RightBracket),
             new RegexTokenDefinition("^=", Token.Equals),
-            new RegexTokenDefinition(@"^\d", Token.Digit),
+            new RegexTokenDefinition(@"^\d+", Token.Digit),
             new RegexTokenDefinition("^true", Token.True),
             new RegexTokenDefinition("^false", Token.False),
             new RegexTokenDefinition("^,", Token.Comma),
@@ -94,10 +60,10 @@ namespace SNKRX_Save_Parser.Deserialization
                     return match;
                 }
             }
-            return new TokenMatch { IsMatch = false };
+            return new TokenMatch();
         }
 
-        private static IEnumerable<TokenMatch> Tokenize(string? data)
+        public static IEnumerable<TokenMatch> Tokenize(string? data)
         {
             var remaining = data;
             while (!string.IsNullOrEmpty(remaining))
@@ -123,7 +89,7 @@ namespace SNKRX_Save_Parser.Deserialization
                     else
                     {
                         // We have a parse failure
-                        yield return new TokenMatch { IsMatch = false, Token = Token.Unknown, Value = remaining };
+                        yield return new TokenMatch(Token.Unknown, remaining);
                         break;
                     }
                 }

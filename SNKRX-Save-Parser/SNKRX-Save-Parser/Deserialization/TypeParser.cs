@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using static SNKRX_Save_Parser.Deserialization.LuaSaveTokenizer;
 
 namespace SNKRX_Save_Parser.Deserialization
 {
@@ -34,7 +33,7 @@ namespace SNKRX_Save_Parser.Deserialization
             else if (t == typeof(bool))
             {
                 var peeked = tokenStream.Peek();
-                if (peeked.Token != Token.True || peeked.Token != Token.False)
+                if (peeked.Token != Token.True && peeked.Token != Token.False)
                     throw new InvalidOperationException($"Expected a boolean (true or false), but found: {peeked.Token}, Value: {peeked.Value}");
                 tokenStream.Consume(peeked.Token);
                 // T is bool
@@ -45,7 +44,30 @@ namespace SNKRX_Save_Parser.Deserialization
                 var literal = tokenStream.Consume(Token.StringLiteral);
                 // Literals contain the prefix and suffix ", remove those.
                 // T is string
-                result = literal.Value.Trim('"');
+                if (!literal.Value.StartsWith('"') || !literal.Value.EndsWith('"'))
+                    throw new InvalidOperationException($"String must have double quotes: '{literal.Value}', this is not a valid string literal!");
+                result = literal.Value[1..^1];
+            }
+            else if (t.IsEnum)
+            {
+                var literal = tokenStream.Consume(Token.StringLiteral);
+                if (!literal.Value.StartsWith('"') || !literal.Value.EndsWith('"'))
+                    throw new InvalidOperationException($"String must have double quotes: '{literal.Value}', this is not a valid string literal (for enum parsing into type: {t})!");
+                var stringValue = literal.Value[1..^1];
+                foreach (var m in t.GetFields(BindingFlags.Public | BindingFlags.Static))
+                {
+                    var conversion = m.GetCustomAttribute<SaveDataNameAttribute>();
+                    if (conversion is not null && conversion.Name == stringValue)
+                    {
+                        result = m.GetValue(null)!;
+                        return true;
+                    } else if (m.Name.Equals(stringValue, StringComparison.OrdinalIgnoreCase))
+                    {
+                        result = m.GetValue(null)!;
+                        return true;
+                    }
+                }
+                throw new InvalidOperationException($"Expected the value: '{stringValue}' to be convertible to an enum of type: {t}, but it was not! Specify an EnumName attribute or ensure a member exists with that name!");
             }
             else
             {
@@ -109,6 +131,19 @@ namespace SNKRX_Save_Parser.Deserialization
             return (List<T>)(object)ParseList(tokenStream, typeof(T));
         }
 
+        private class PropertyMapping
+        {
+            public PropertyInfo Property { get; }
+            public bool AssignedTo { get; set; }
+            public bool MaybeIgnored { get; }
+            public PropertyMapping(PropertyInfo info, bool assigned, bool ignored)
+            {
+                Property = info;
+                AssignedTo = assigned;
+                MaybeIgnored = ignored;
+            }
+        }
+
         public static object Parse(LuaSaveTokenStream tokenStream, Type t)
         {
             // First try to see if we are a primtive type.
@@ -122,7 +157,7 @@ namespace SNKRX_Save_Parser.Deserialization
             // For each property, check to see if they have the SaveDataNameAttribute
             // Create a mapping from save name to PropertyInfo on the type.
             // Read the full object, parse to property names as necessary.
-            var mapping = new Dictionary<string, (PropertyInfo Property, bool AssignedTo, bool MaybeIgnored)>();
+            var mapping = new Dictionary<string, PropertyMapping>(StringComparer.OrdinalIgnoreCase);
             foreach (var p in t.GetProperties())
             {
                 var saveData = p.GetCustomAttribute<SaveDataNameAttribute>();
@@ -134,7 +169,7 @@ namespace SNKRX_Save_Parser.Deserialization
                 bool ignorable = p.GetCustomAttribute<SerializeIfAttribute>() is not null
                     || p.GetCustomAttribute<SerializeIfNotAttribute>() is not null
                     || p.GetCustomAttribute<IgnoreAttribute>() is not null;
-                mapping.Add(name, (p, false, ignorable));
+                mapping.Add(name, new(p, false, ignorable));
             }
 
             // Now we actually parse our type.
@@ -147,6 +182,9 @@ namespace SNKRX_Save_Parser.Deserialization
                 // Read property name
                 tokenStream.Consume(Token.LeftBracket);
                 var propName = PrimitiveParse<string>(tokenStream);
+                tokenStream.Consume(Token.RightBracket);
+                // Read assignment
+                tokenStream.Consume(Token.Equals);
                 if (!mapping.TryGetValue(propName, out var mappedTo))
                     throw new InvalidOperationException($"Encountered a property name that is not handled when deserializing: {t}! Property name: '{propName}'");
                 if (mappedTo.AssignedTo)
@@ -166,9 +204,9 @@ namespace SNKRX_Save_Parser.Deserialization
             }
             // After we are done with the instance, we should check the mapping for any unassigned properties.
             var lst = new List<Exception>();
-            foreach (var (Property, _, _) in mapping.Values.Where(p => !p.AssignedTo && !p.MaybeIgnored))
+            foreach (var item in mapping.Values.Where(p => !p.AssignedTo && !p.MaybeIgnored))
             {
-                lst.Add(new InvalidOperationException($"Type: {t} has property: {Property.Name} that was not assigned to nor ignored (either implicitly or explicitly)!"));
+                lst.Add(new InvalidOperationException($"Type: {t} has property: {item.Property.Name} that was not assigned to nor ignored (either implicitly or explicitly)!"));
             }
             if (lst.Count > 0)
                 throw new AggregateException(lst);

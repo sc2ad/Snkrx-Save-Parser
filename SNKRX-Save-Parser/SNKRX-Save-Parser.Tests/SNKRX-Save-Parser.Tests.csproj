@@ -20,4 +20,8 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\SNKRX-Save-Parser\SNKRX-Save-Parser.csproj" />
+  </ItemGroup>
+
 </Project>

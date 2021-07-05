@@ -74,7 +74,7 @@ namespace SNKRX_Save_Parser.Deserialization
 
         public int Length()
         {
-            return tokens.Count;
+            return tokens.Count - index;
         }
     }
 }
